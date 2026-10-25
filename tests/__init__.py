@@ -1,0 +1,1 @@
+"""Suite automatizada do TaskAnalyzer."""
