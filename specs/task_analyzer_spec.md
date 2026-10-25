@@ -1,98 +1,57 @@
-# TaskAnalyzer - Especificação SDD
+# TaskAnalyzer - Especificacao SDD (contrato refinado para a Etapa Final)
 
-## 1. Visão geral
+## 1. Objetivo
+Receber uma colecao de tarefas e produzir metricas gerais e por prioridade, sem gravar dados em arquivos ou bancos de dados.
 
-### 1.1 Propósito
-O módulo TaskAnalyzer deve analisar tarefas executadas e gerar métricas de produtividade. Deve calcular o tempo médio de conclusão por tipo/prioridade, identificar a taxa de atraso, gerar indicadores por prioridade e fornecer métricas para tomada de decisão e melhoria contínua.
+## 2. Interface publica
+`analyze_tasks(tasks: list[dict[str, object]]) -> dict[str, object]`
 
-### 1.2 Contrato executável de interface
+A funcao recebe uma lista de tarefas. Cada tarefa deve possuir:
 
-#### 1.2.1 Entradas (inputs)
-
-| Campo | Tipo | Obrigatório | Descrição / Restrições |
+| Campo | Tipo | Obrigatorio | Regra |
 |---|---|---|---|
-| `id_tarefa` | `int` | Sim | Identificador único da tarefa (> 0) |
-| `data_criacao` | `datetime` | Sim | Data/hora de criação (UTC) |
-| `data_inicio` | `datetime` | Não | Data/hora de início da execução |
-| `data_conclusao` | `datetime` | Não | Data/hora de conclusão da execução |
-| `prazo` | `datetime` | Sim | Data/hora limite para conclusão |
-| `prioridade` | `str enum` | Sim | Valores: `baixa`, `media`, `alta` |
-| `status` | `str enum` | Sim | Valores: `concluida`, `pendente`, `cancelada` |
+| `id_tarefa` | int | Sim | Inteiro positivo e unico na lista. |
+| `data_criacao` | datetime | Sim | Data/hora com fuso; normalizada para UTC. |
+| `data_inicio` | datetime ou None | Para tarefa concluida | Inicio da execucao. |
+| `data_conclusao` | datetime ou None | Para tarefa concluida | Fim da execucao. |
+| `prazo` | datetime | Sim | Data/hora limite, com fuso. |
+| `prioridade` | str | Sim | `baixa`, `media` ou `alta`. |
+| `status` | str | Sim | `concluida`, `pendente` ou `cancelada`. |
 
-#### 1.2.2 Saídas (outputs)
+A implementacao exige timestamps com fuso para evitar ambiguidade de timezone e converte todos para UTC.
 
-| Campo | Tipo | Descrição |
-|---|---|---|
-| `tempo_medio_conclusao_min` | `float` | Tempo médio de conclusão em minutos (por prioridade e geral) |
-| `taxa_atraso_percentual` | `float` | Percentual de tarefas concluídas após o prazo (por prioridade e geral) |
-| `quantidade_tarefas` | `int` | Total de tarefas consideradas na análise (por prioridade e geral) |
-| `indicadores_por_prioridade` | `dict` | Estrutura com métricas agrupadas por prioridade (`baixa`, `media`, `alta`) |
+## 3. Validacoes
+- Rejeitar tarefas que nao sejam objetos de mapeamento.
+- Rejeitar ID ausente, nao inteiro, menor ou igual a zero ou repetido.
+- Rejeitar prioridade/status fora dos enumerados autorizados.
+- Rejeitar datas que nao sejam `datetime` com fuso horario.
+- Rejeitar `data_inicio` anterior a `data_criacao`.
+- Para tarefa concluida, exigir `data_inicio` e `data_conclusao`.
+- Rejeitar conclusao anterior a criacao ou ao inicio.
+- Usar `TaskValidationError` para entradas invalidas.
 
-#### 1.2.3 Regras de negócio e restrições
-1. Considerar apenas tarefas cujo status seja `concluida` para o cálculo de tempo e atraso.
-2. Calcular tempo de conclusão como `data_conclusao - data_inicio`, em minutos.
-3. Considerar tarefa em atraso quando `data_conclusao > prazo`.
-4. Ignorar tarefas com datas inconsistentes, como conclusão anterior ao início.
-5. Tratar divisão por zero quando não houver tarefas concluídas.
-6. Usar UTC como referência de fuso horário.
-7. Arredondar tempos e percentuais para 2 casas decimais.
+## 4. Regras de metricas
+- `total_tarefas` e `quantidade_tarefas` contam todas as tarefas recebidas, incluindo as canceladas.
+- `total_concluidas`, `total_pendentes` e `total_canceladas` contam cada status separadamente.
+- Tempo de conclusao = `data_conclusao - data_inicio`, em minutos.
+- Media de tempo considera apenas tarefas concluidas; apresenta minutos e horas, arredondados a duas casas.
+- Uma tarefa concluida esta atrasada se `data_conclusao > prazo`.
+- Taxa de atraso = tarefas concluidas apos o prazo / total concluido * 100.
+- Medias e taxa de atraso retornam `0.0` quando nao ha tarefas concluidas; nao ocorre divisao por zero.
+- Repetir as metricas para o total geral e para cada prioridade.
 
-## 2. Cenários de aceite e Test Harness
+## 5. Estrutura de saida
+A resposta inclui `total_tarefas`, contadores por status, `quantidade_tarefas`, `tempo_medio_conclusao_min`, `tempo_medio_conclusao_horas`, `taxa_atraso_percentual` e `indicadores_por_prioridade`. O mapa de prioridades sempre contem `baixa`, `media` e `alta`, mesmo quando uma prioridade nao aparece na entrada.
 
-### 2.1 Cenário 1 - Sucesso (métricas corretas)
-**Dado:** um conjunto de tarefas válidas com diferentes prioridades, prazos e status (`concluida` e `pendente`).
+## 6. Cenarios automatizados
+1. Sucesso: metricas gerais e por prioridade corretas.
+2. Erro: cronologia invalida gera `TaskValidationError`.
+3. Entrada vazia retorna metricas numericas zero.
+4. Apenas tarefas pendentes retorna medias e taxa zero.
+5. Status invalido gera erro especifico.
+6. ID duplicado gera erro especifico.
+7. Tarefa concluida sem datas de execucao gera erro.
+8. Conclusao anterior ao inicio gera erro.
 
-**Quando:** o analisador de tarefas for executado.
-
-**Então:** as métricas retornadas devem estar corretas, incluindo:
-- tempo médio de conclusão por prioridade e geral;
-- taxa de atraso correta por prioridade e geral;
-- quantidade de tarefas corretas por prioridade.
-
-### 2.2 Cenário 2 - Exceção / Erro (entradas inválidas)
-**Dado:** uma entrada com datas inválidas (por exemplo, conclusão antes do início) ou ausência de tarefas concluídas, o que pode levar à divisão por zero.
-
-**Quando:** o analisador de tarefas for executado.
-
-**Então:** deve disparar uma exceção específica tratada, com mensagem clara e objetiva ao usuário.
-
-### 2.3 Planejamento do Test Harness
-Os cenários descritos acima devem ser convertidos em casos de teste específicos. O Test Harness deve:
-- separar cenário de aceite em casos de teste;
-- preparar os dados de entrada e os resultados esperados;
-- usar `pytest` para os testes automatizados;
-- validar outputs, tipos e exceções;
-- executar os testes continuamente e bloquear o avanço da próxima fase em caso de falha;
-- produzir evidências/relatórios de resultado e cobertura.
-
-## 3. Arquitetura preparada para a Fase 2
-
-```text
-sdd-task-analyzer/
-├── README.md
-├── CONTEXT_RULES.md
-├── specs/
-│   └── task_analyzer_spec.md
-├── tests/
-│   └── test_harness.py
-├── src/
-│   └── task_analyzer.py
-├── .gitignore
-└── requirements.txt
-```
-
-## 4. Estratégia de versionamento (preparação para a Fase 2)
-- Git Flow simplificado: `main`, `develop`, `feature/*`.
-- Commits pequenos e descritivos.
-- Pull Requests para revisão e aprovação.
-- Revisões obrigatórias antes do merge.
-- Tags para releases importantes.
-
-## 5. Homologação humana
-Antes de aceitar qualquer código gerado por IA:
-1. executar os testes automatizados e verificar cobertura;
-2. revisar conformidade com o contrato de negócio e com `CONTEXT_RULES.md`;
-3. analisar qualidade, legibilidade e tratamento de erros;
-4. verificar se não houve violação das proibições;
-5. realizar testes manuais complementares quando necessário;
-6. somente então aprovar e efetuar o commit no repositório.
+## 7. Refinamento e rastreabilidade
+A especificacao inicial menciona ignorar datas inconsistentes; a entrega intermediaria solicita `TaskValidationError` para datas inconsistentes. Este pacote adota a excecao especifica e documenta essa escolha. A regra de zero para ausencia de tarefas concluidas tambem e mantida, conforme os casos de borda da etapa intermediaria.

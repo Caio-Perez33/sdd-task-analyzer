@@ -1,0 +1,23 @@
+project:
+  name: TaskAnalyzer
+  purpose: Analisar métricas de produtividade de tarefas sem persistência de dados.
+  python_minimum: "3.11"
+
+runtime_dependencies: []
+
+quality_and_test_dependencies:
+  - package: pytest
+    version: ">=8.0,<9.0"
+    purpose: Executar os testes automatizados do contrato SDD.
+
+contract:
+  priorities: [baixa, media, alta]
+  statuses: [concluida, pendente, cancelada]
+  timezone: UTC
+  rounding_decimal_places: 2
+  persistent_storage: false
+  external_runtime_libraries_allowed: false
+
+container:
+  base_image: python:3.11-slim
+  execution: python -m pytest tests/test_harness.py -v

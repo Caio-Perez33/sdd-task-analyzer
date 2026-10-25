@@ -1,0 +1,13 @@
+services:
+  testes:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: sdd-task-analyzer:test
+    command: ["python", "-m", "pytest", "-p", "no:cacheprovider", "tests/test_harness.py", "-v"]
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+    read_only: true
+    tmpfs:
+      - /tmp

@@ -1,0 +1,100 @@
+BOOTCAMP III - ETAPA FINAL TASKANALYZER
+GUIA DE APLICACAO NO WINDOWS COM GIT BASH
+
+IMPORTANTE
+Este pacote contem arquivos completos do projeto. Copie o conteudo da pasta extraida para a raiz do seu repositorio local, mantendo as pastas e caminhos. Antes de sobrescrever arquivos, confirme que git status esta limpo e que nao ha alteracoes locais que precise guardar.
+
+1. ABRIR O GIT BASH E ENTRAR NO REPOSITORIO
+
+cd "$HOME/OneDrive/Área de Trabalho/sdd-task-analyzer"
+git status
+git fetch origin
+git switch main
+git pull origin main
+git switch -c feature/etapa-final-devops
+
+Se a ultima linha informar que a branch ja existe, use:
+git switch feature/etapa-final-devops
+
+2. COPIAR OS ARQUIVOS
+
+Extraia o ZIP. Copie todos os arquivos e pastas de dentro da pasta Etapa_Final_TaskAnalyzer para a raiz de sdd-task-analyzer. Aceite substituir os arquivos quando solicitado. Nao copie a pasta externa como uma subpasta dentro do repositorio; Dockerfile, README.md e requirements.txt devem ficar diretamente na raiz.
+
+3. VALIDAR PYTHON E OS TESTES
+
+python --version
+python -m venv .venv
+source .venv/Scripts/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m pytest -v
+
+Resultado esperado: 8 passed. Se houver falha, nao avance para o commit; envie a mensagem completa do terminal para corrigirmos.
+
+4. VALIDAR DOCKER
+
+Abra o Docker Desktop e espere o mecanismo indicar que esta iniciado. Volte ao Git Bash, confirme que esta na raiz do projeto e execute:
+
+docker --version
+docker compose version
+docker compose run --build --rm testes
+
+O resultado esperado e a aprovacao de 8 testes. Se o Docker nao estiver instalado ou em execucao, essa etapa ainda nao foi validada.
+
+5. CONFERIR E VERSIONAR
+
+git status --short
+git diff --check
+git diff --stat
+
+Confira o resultado. Nao adicione .venv, __pycache__ ou .pytest_cache.
+
+Execute:
+git add .
+git diff --cached --stat
+git commit -m "feat: adiciona CI Docker e governanca da etapa final"
+git push -u origin feature/etapa-final-devops
+
+6. ABRIR O PULL REQUEST
+
+Abra no navegador:
+https://github.com/Caio-Perez33/sdd-task-analyzer/compare/main...feature/etapa-final-devops?expand=1
+
+Titulo sugerido:
+feat: adiciona CI/CD, Docker e relatorio de governanca
+
+Descricao sugerida:
+
+## Objetivo
+Concluir a etapa final do TaskAnalyzer com automacao de testes, construcao Docker e documentacao de governanca/etica.
+
+## Alteracoes
+- Configura CI no GitHub Actions para testar com Python 3.11.
+- Constroi a imagem Docker somente apos os testes passarem.
+- Padroniza a execucao com Docker Compose.
+- Atualiza o contrato SDD, os requisitos declarativos e a documentacao de arquitetura.
+- Adiciona relatorio de governanca/etica e roteiro do pitch tecnico.
+
+## Validacao
+- Local: python -m pytest -v (registrar o resultado real).
+- Docker: docker compose run --build --rm testes (registrar o resultado real).
+- GitHub Actions: conferir o status real depois da execucao.
+
+Revise a aba Files changed. Faca merge somente depois de revisar o diff e confirmar os testes. Nao diga no relatorio ou no video que Actions/Docker passaram se isso nao estiver demonstrado.
+
+7. VERIFICAR O CI
+
+Depois do push ou do PR, abra a aba Actions do repositorio e confira se o workflow "CI TaskAnalyzer" terminou em verde. Se estiver vermelho, abra o job, copie o erro e corrija antes de concluir a entrega.
+
+8. RELATORIO E VIDEO
+
+O PDF Relatorio_Governanca_Etica_TaskAnalyzer.pdf e parte deste pacote. Ele informa que a suite de testes deste pacote foi executada aqui, mas que a execucao remota do GitHub Actions e o Docker no seu computador precisam de verificacao local. Leia e confirme que o estado continua verdadeiro depois de rodar os comandos. O roteiro do video esta em docs/Roteiro_Pitch_Etapa_Final.md.
+
+Grave um video horizontal de aproximadamente 5 minutos, com camera e audio visiveis. Mostre a aba Actions com o resultado real, o comando Docker com o resultado real, as regras de contexto e a conclusao. Publique como Publico ou Nao listado e copie a URL real para a plataforma AVA.
+
+CHECKLIST FINAL DA PLATAFORMA
+[ ] Repositorio publico com arquivos finais.
+[ ] GitHub Actions finalizado em verde.
+[ ] docker compose run --build --rm testes com 8 testes aprovados.
+[ ] PDF de Governanca e Etica enviado.
+[ ] Video de aproximadamente 5 minutos publicado e link real enviado.
